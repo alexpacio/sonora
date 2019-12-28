@@ -1,7 +1,6 @@
 import Bravia from "./Bravia";
 
 interface ICommand {
-    name: string;
     regex: RegExp;
     braviaCommand: string;
 }
@@ -14,7 +13,6 @@ export class Command {
         this.clientBravia = clientBravia;
         this.commandsList = [
             {
-                name: "accendi tv",
                 regex: new RegExp(/accendi tv/g),
                 braviaCommand: "WakeUp"
             },
@@ -24,37 +22,30 @@ export class Command {
                 braviaCommand: "PowerOff"
             }, */
             {
-                name: "spegni tv",
                 regex: new RegExp(/spegni tv/g),
                 braviaCommand: "Sleep"
             },
             {
-                name: "alza volume",
                 regex: new RegExp(/alza volume/g),
                 braviaCommand: "VolumeUp"
             },
             {
-                name: "abbassa volume",
                 regex: new RegExp(/abbassa volume/g),
                 braviaCommand: "VolumeDown"
             },
             {
-                name: "volume attivo",
                 regex: new RegExp(/volume attivo/g),
                 braviaCommand: "Mute"
             },
             {
-                name: "volume muto",
                 regex: new RegExp(/volume muto/g),
                 braviaCommand: "Mute"
             },
             {
-                name: "canale successivo",
                 regex: new RegExp(/canale successivo/g),
                 braviaCommand: "ChannelUp"
             },
             {
-                name: "canale precedente",
                 regex: new RegExp(/canale precedente/g),
                 braviaCommand: "ChannelDown"
             }
@@ -62,22 +53,24 @@ export class Command {
     }
 
     async runCommand(sonusIncomingPhrase): Promise<void> {
-        if(isNaN(sonusIncomingPhrase) && new RegExp(/\d/g).test(sonusIncomingPhrase) === false) {
-            for(const i in this.commandsList) {
-                if(this.commandsList[i].regex.test(sonusIncomingPhrase)) {
-                    await this.clientBravia.exec(this.commandsList[i].braviaCommand);
-                    break;
-                }
+        const numberFound = new RegExp(/\d+/g).exec(sonusIncomingPhrase);
+        const commandFound = this.commandsList.find(e => e.regex.test(sonusIncomingPhrase));
+        if (numberFound && commandFound && (commandFound.braviaCommand === "VolumeUp" || commandFound.braviaCommand === "VolumeDown")) {
+            const ticks = parseInt(numberFound[0]);
+            for (let i = 0; i < ticks; i++) {
+                await this.clientBravia.exec(commandFound.braviaCommand);
             }
-        } else {
+        } else if (isNaN(sonusIncomingPhrase) && !numberFound && commandFound) {
+            await this.clientBravia.exec(commandFound.braviaCommand);
+        } else if (!commandFound) {
             let number = sonusIncomingPhrase;
-            if(sonusIncomingPhrase.substr(0, 6) === "canale") {
+            if (sonusIncomingPhrase.substr(0, 6) === "canale") {
                 number = sonusIncomingPhrase.substr(7)
             }
-            for(let i = 0; i < number.length; i++) {
+            for (let i = 0; i < number.length; i++) {
                 await this.clientBravia.exec("Num" + number[i]);
             }
         }
-        
+
     }
 }
